@@ -2,19 +2,24 @@ import mongoose, { Document, Error, Model, Mongoose, Schema } from "mongoose";
 import { UserModel } from "../interfaces/user.interface";
 import * as bcrypt from "bcrypt";
 // import { compare, genSalt, genSaltSync, hash, hashSync } from "bcrypt-ts";
-const user = new Schema<UserModel>({
-  firstName: { type: String, required: false },
-  lastName: { type: String, required: false },
-  gender: {
-    type: String,
-    enum: ["male", "female", "other"],
+const user = new Schema<UserModel>(
+  {
+    firstName: { type: String, required: false },
+    lastName: { type: String, required: false },
+    gender: {
+      type: String,
+      enum: ["male", "female", "other"],
+    },
+    dob: { type: Date, required: false },
+    email: { type: String, required: true, lowercase: true, unique: true },
+    password: { type: String, required: true },
+    phoneNumber: { type: String, required: false },
+    employeeId: { type: String, required: false },
   },
-  dob: { type: Date, required: false },
-  email: { type: String, required: true, lowercase: true, unique: true },
-  password: { type: String, required: true },
-  phoneNumber: { type: String, required: false },
-  employeeId: { type: String, required: false },
-});
+  {
+    versionKey: false,
+  }
+);
 
 user.pre<UserModel>("save", async function (next) {
   if (!this.isModified("password")) return next();
