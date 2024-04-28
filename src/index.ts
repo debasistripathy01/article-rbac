@@ -1,7 +1,5 @@
 import passport from "passport";
 import { UserAuth } from "./routes/auth.routes";
-import { Server, clienConnect } from "./dbconfig/db.module";
-// import chalk from "chalk";
 import express from "express";
 import morgan from "morgan";
 import dotenv from "dotenv";
@@ -10,13 +8,15 @@ dotenv.config();
 import mongoose from "mongoose";
 import session from "express-session";
 import MongoStore from "connect-mongo";
-import { strategies } from "passport";
+
+import { passportAuth } from "./utils/passport.auth";
+
 const app = express();
 app.use(morgan("dev"));
 app.use(express.static("public"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-// app.use(passport.session());
+
 app.use(
   session({
     secret: "keyboardcat",
@@ -25,27 +25,33 @@ app.use(
     cookie: { secure: false, maxAge: 1000 * 60 * 60 },
     store: MongoStore.create({
       mongoUrl: process.env.MONGODB_URI as string,
-      collectionName: "session",
+      dbName: "your_db_name", // Set your database name here
     }),
   })
 );
+
 app.use(passport.initialize());
 app.use(passport.session());
-require("./utils/passport.auth");
-app.get("/data", (req: any, res: any) => {
+passportAuth();
+
+app.get("/data", (req: express.Request, res: express.Response) => {
   res.send("This is home app");
 });
 
 app.use("/auth", UserAuth);
 
-// Start the server
-const PORT = process.env.PORT || 8001;
-
 const startServer = async (): Promise<void> => {
-  await mongoose.connect(process.env.MONGODB_URI as string);
-  console.log("Server connected to DB");
-  // chalk.magentaBright(`Server started with DB`);
-  const PORT = process.env.PORT;
-  app.listen(PORT, () => console.log(`👉👉 App listening on port${PORT}👈👈`));
+  try {
+    await mongoose.connect(process.env.MONGODB_URI as string);
+    console.log("Server connected to DB");
+    const PORT = process.env.PORT || 8001;
+    app.listen(PORT, () =>
+      console.log(`👉👉 App listening on port ${PORT} 👈👈`)
+    );
+  } catch (error) {
+    console.error("Error connecting to database:", error);
+    process.exit(1); // Exit with error
+  }
 };
+
 startServer();
