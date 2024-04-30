@@ -1,14 +1,21 @@
-import mongoose, { Document, Error, Model, Mongoose, Schema } from "mongoose";
+import mongoose, { Schema } from "mongoose";
 import { UserModel } from "../interfaces/user.interface";
 import * as bcrypt from "bcrypt";
-// import { compare, genSalt, genSaltSync, hash, hashSync } from "bcrypt-ts";
-const user = new Schema<UserModel>(
+import createHttpError from "http-errors";
+import { Roles } from "../utils/constants";
+
+const userSchema = new Schema<UserModel>(
   {
     firstName: { type: String, required: false },
     lastName: { type: String, required: false },
     gender: {
       type: String,
       enum: ["male", "female", "other"],
+    },
+    role: {
+      type: String,
+      enum: [Roles.ADMIN, Roles.USER, Roles.SUPERVISOR, Roles.AGENT],
+      default: Roles.USER,
     },
     dob: { type: Date, required: false },
     email: { type: String, required: true, lowercase: true, unique: true },
@@ -21,7 +28,8 @@ const user = new Schema<UserModel>(
   }
 );
 
-user.pre<UserModel>("save", async function (next) {
+userSchema.pre<UserModel>("save", async function (next) {
+  let user = this;
   if (!this.isModified("password")) return next();
 
   try {
@@ -30,21 +38,21 @@ user.pre<UserModel>("save", async function (next) {
     this.password = hashedPassword;
     next();
   } catch (error) {
-    // next(error);
-    console.log("Error at hashing password", error);
-    // next(error);
+    // next(error); // Pass the error to the next middleware
+    console.error("Error at hashing password", error);
   }
 });
 
 // Custom method to validate password
-user.methods.isValidPassword = async function (password: string) {
-  try {
-    return await bcrypt.compare(password, this.password);
-  } catch (error) {
-    // throw new Error(error);
-    console.log("Error at validating password", error);
-  }
+userSchema.methods.isValidPassword = async function (
+  candidatePassword: any,
+  done: any
+) {
+  bcrypt.compare(candidatePassword, this.password, function (err, isMatch) {
+    if (err) return done(err);
+    done(null, isMatch);
+  });
 };
 
-const User = mongoose.model<UserModel>("User", user);
+const User = mongoose.model<UserModel>("User", userSchema);
 export { User };

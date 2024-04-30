@@ -13,4 +13,4 @@ Router.use((error: { status: number }, req: any, res: any, next: any) => {
   console.log(error);
   res.send(error);
 });
-export { Router };
+export { Router as ErrorCodes };
