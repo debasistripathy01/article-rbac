@@ -16,7 +16,7 @@ export const passportAuth = () => {
         if (user.password !== password) {
           return done(null, false);
         }
-        if (!compareSync(user.password, password)) {
+        if (!compareSync(password, user.password)) {
           return done(null, false, { message: "Incorrect Password" });
         }
 
@@ -26,17 +26,15 @@ export const passportAuth = () => {
       }
     })
   );
-};
-
-//Persissts user data inside session data
-passport.serializeUser(function (user: any, done) {
-  done(null, user.id);
-});
-
-passport.deserializeUser(function (id: any, done) {
-  User.findById(id, function (err: Object, user: String) {
-    done(err, user);
+  passport.serializeUser(function (user: any, done) {
+    done(null, user.id);
   });
-});
+
+  passport.deserializeUser(function (id: any, done) {
+    User.findById(id, function (err: Object, user: String) {
+      done(err, user);
+    });
+  });
+};
 
 export {};

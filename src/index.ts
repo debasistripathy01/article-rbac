@@ -10,12 +10,17 @@ import session from "express-session";
 import MongoStore from "connect-mongo";
 
 import { passportAuth } from "./utils/passport.auth";
+import createHttpError from "http-errors";
 
 const app = express();
 app.use(morgan("dev"));
 app.use(express.static("public"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+// for the routes which are not handled by this application - 404 Handler
+app.use((req, res, next) => {
+  next(createHttpError.NotFound());
+});
 
 app.use(
   session({
@@ -39,6 +44,14 @@ app.get("/data", (req: express.Request, res: express.Response) => {
 });
 
 app.use("/auth", UserAuth);
+
+// error handler middleware
+app.use((error: any, req: any, res: any, next: any) => {
+  error.status = error.status || 500;
+  res.status(error.status);
+  console.log(error);
+  res.send(error);
+});
 
 const startServer = async (): Promise<void> => {
   try {
